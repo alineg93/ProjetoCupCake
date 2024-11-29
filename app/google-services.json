@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "63345002987",
+    "project_id": "cafeteiriagoumertdelivery",
+    "storage_bucket": "cafeteiriagoumertdelivery.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:63345002987:android:0899ec6d2fb01080c8b1ae",
+        "android_client_info": {
+          "package_name": "projeto.tcc.cafeteiriagoumertdelivery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNbI8OlD2MKDigFgIAdhDM0z5uoTIlo-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
