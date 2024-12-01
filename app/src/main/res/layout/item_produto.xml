@@ -28,7 +28,7 @@
             android:layout_weight="1"
             android:text="Nome produto x"
             android:textColor="#000000"
-            android:textStyle="bold" />
+             />
 
         <TextView
             android:id="@+id/textPreco"
@@ -51,10 +51,28 @@
 
     <Button
         android:id="@+id/add_carrinho"
-        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="Adicionar ao Carrinho" />
+        android:text="Adicionar ao Carrinho"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/remover_produto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:backgroundTint="#FF5722"
+        android:text="Remover Produto"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/remover_carrinho"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:backgroundTint="#FF5722"
+        android:text="Remover do Carrinho"
+        android:visibility="gone" />
 
 </LinearLayout>

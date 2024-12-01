@@ -3,12 +3,14 @@ package projeto.tcc.cafeteiriagoumertdelivery;
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.NotificationCompat;
@@ -19,8 +21,13 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,15 +41,20 @@ import projeto.tcc.cafeteiriagoumertdelivery.databinding.ActivityCarrinhoBinding
 import projeto.tcc.cafeteiriagoumertdelivery.databinding.ActivityMainBinding;
 import projeto.tcc.cafeteiriagoumertdelivery.model.PedidoModel;
 import projeto.tcc.cafeteiriagoumertdelivery.model.ProdutoModel;
+import projeto.tcc.cafeteiriagoumertdelivery.model.UsuarioModel;
 import projeto.tcc.cafeteiriagoumertdelivery.util.CarrinhoUtil;
 
 public class CarrinhoActivity extends AppCompatActivity {
 
+    private DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference().child("usersCupCake");
     private DatabaseReference redPedidos = FirebaseDatabase.getInstance().getReference("pedidosCupCake");
 
     private ActivityCarrinhoBinding mainBinding;
     private AdapterProdutos adapterProdutos;
     private List<ProdutoModel> listaProdutos;
+    private FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    private String nomeCliente = "";
+    private String total = "";
 
     @SuppressLint({"SimpleDateFormat", "NotifyDataSetChanged", "InlinedApi"})
     @Override
@@ -52,6 +64,24 @@ public class CarrinhoActivity extends AppCompatActivity {
         setContentView(mainBinding.getRoot());
         Objects.requireNonNull(getSupportActionBar()).setTitle("Carrinho");
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+
+        usersRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot dado : snapshot.getChildren()) {
+                    UsuarioModel usuarioModel = dado.getValue(UsuarioModel.class);
+                    if (usuarioModel.getEmail().equals(user.getEmail())) {
+                        nomeCliente = usuarioModel.getNome();
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
 
 
         if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -67,31 +97,40 @@ public class CarrinhoActivity extends AppCompatActivity {
 
 
         mainBinding.total.setText(calcularValorTotal());
+        total = mainBinding.total.getText().toString();
 
         mainBinding.finalizar.setOnClickListener(v -> {
+            
+            if ( !nomeCliente.isEmpty() ){
+                PedidoModel pedidoModel = new PedidoModel();
+                pedidoModel.setData_hora(new SimpleDateFormat("dd/MM/yyyy hh:mm").format(new Date()));
+                pedidoModel.setProdutos(listaProdutos);
+                pedidoModel.setTotal_compra(calcularValorTotal());
+                pedidoModel.setId(UUID.randomUUID().toString());
 
-            PedidoModel pedidoModel = new PedidoModel();
-            pedidoModel.setData_hora(new SimpleDateFormat("dd/MM/yyyy hh:mm").format(new Date()));
-            pedidoModel.setProdutos(listaProdutos);
-            pedidoModel.setTotal_compra(calcularValorTotal());
-            pedidoModel.setId(UUID.randomUUID().toString());
+                if (mainBinding.radioButton.isChecked()) {
+                    pedidoModel.setMetodo_pagamento("Cartão");
+                } else if (mainBinding.radioButton2.isChecked()) {
+                    pedidoModel.setMetodo_pagamento("Pix");
+                } else {
+                    pedidoModel.setMetodo_pagamento("Dinheiro");
+                }
 
-            if (mainBinding.radioButton.isChecked()) {
-                pedidoModel.setMetodo_pagamento("Cartão");
-            } else if (mainBinding.radioButton2.isChecked()) {
-                pedidoModel.setMetodo_pagamento("Pix");
-            } else {
-                pedidoModel.setMetodo_pagamento("Dinheiro");
+                redPedidos.child(pedidoModel.getId()).setValue(pedidoModel);
+                CarrinhoUtil.saveCarrinho(new ArrayList<>(), this);
+                listaProdutos.clear();
+                mainBinding.total.setText(calcularValorTotal());
+                adapterProdutos.notifyDataSetChanged();
+
+                Intent intentRecibo = new Intent(this, ReciboActivity.class);
+                intentRecibo.putExtra("total", total);
+                intentRecibo.putExtra("Cliente", nomeCliente);
+                startActivity(intentRecibo);
+                enviarNotificacao("Pedido Realizado", "O seu pedido já foi entregue para o gerente responsável.");
+                Toast.makeText(this, "Pedido Realizado", Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(this, "Espere, carregando, tente novamente...", Toast.LENGTH_SHORT).show();
             }
-
-            redPedidos.child(pedidoModel.getId()).setValue(pedidoModel);
-            CarrinhoUtil.saveCarrinho(new ArrayList<>(), this);
-            listaProdutos.clear();
-            mainBinding.total.setText(calcularValorTotal());
-            adapterProdutos.notifyDataSetChanged();
-
-            enviarNotificacao("Pedido Realizado", "O seu pedido já foi entregue para o gerente responsável.");
-            Toast.makeText(this, "Pedido Realizado", Toast.LENGTH_SHORT).show();
         });
     }
 
